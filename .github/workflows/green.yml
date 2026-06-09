@@ -2,7 +2,7 @@ name: Green Contributions
 
 on:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -16,17 +16,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate activity
-        run: |
-          echo "Update $(date)" >> activity.txt
-
-      - name: Commit changes
+      - name: Configure Git
         run: |
           git config user.name "mms1688"
           git config user.email "mms1688@users.noreply.github.com"
 
-          git add .
+      - name: Generate Random Activity
+        run: |
+          COMMITS=$((RANDOM % 8 + 1))
 
-          git commit -m "Automatic contribution $(date)" || exit 0
+          for ((i=1;i<=COMMITS;i++))
+          do
+            echo "$(date) - $RANDOM" >> activity.txt
+            git add activity.txt
+            git commit -m "Update $i" || true
+          done
 
+      - name: Push Changes
+        run: |
           git push
