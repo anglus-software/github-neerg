@@ -2,7 +2,13 @@ name: Green Contributions
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    # 6 execuções por dia
+    - cron: '17 1 * * *'
+    - cron: '43 5 * * *'
+    - cron: '12 9 * * *'
+    - cron: '28 13 * * *'
+    - cron: '51 17 * * *'
+    - cron: '09 21 * * *'
   workflow_dispatch:
 
 permissions:
@@ -13,25 +19,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Configure Git
         run: |
           git config user.name "mms1688"
           git config user.email "mms1688@users.noreply.github.com"
 
-      - name: Generate Random Activity
+      - name: Generate Activity
         run: |
-          COMMITS=$((RANDOM % 8 + 1))
+          # Entre 8 e 25 commits por execução
+          COMMITS=$((RANDOM % 18 + 8))
 
           for ((i=1;i<=COMMITS;i++))
           do
-            echo "$(date) - $RANDOM" >> activity.txt
+            echo "$(date) | $RANDOM | commit $i" >> activity.txt
             git add activity.txt
-            git commit -m "Update $i" || true
+            git commit -m "chore: update activity" || true
           done
 
       - name: Push Changes
-        run: |
-          git push
+        run: git push
