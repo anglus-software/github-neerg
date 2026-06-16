@@ -2,41 +2,90 @@ name: Green Contributions
 
 on:
   schedule:
-    # 6 execuções por dia
-    - cron: '17 1 * * *'
-    - cron: '43 5 * * *'
-    - cron: '12 9 * * *'
-    - cron: '28 13 * * *'
-    - cron: '51 17 * * *'
-    - cron: '09 21 * * *'
+    # 8 execuções por dia
+    - cron: '07 0 * * *'
+    - cron: '38 3 * * *'
+    - cron: '14 6 * * *'
+    - cron: '52 9 * * *'
+    - cron: '23 12 * * *'
+    - cron: '47 15 * * *'
+    - cron: '19 18 * * *'
+    - cron: '41 21 * * *'
+
   workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: green-contributions
+  cancel-in-progress: false
+
 jobs:
   contribution:
     runs-on: ubuntu-latest
+    timeout-minutes: 360
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configure Git
         run: |
           git config user.name "mms1688"
           git config user.email "mms1688@users.noreply.github.com"
 
-      - name: Generate Activity
+      - name: Generate Heavy Activity
         run: |
-          # Entre 8 e 25 commits por execução
-          COMMITS=$((RANDOM % 18 + 8))
+          BRANCH="${GITHUB_REF_NAME}"
+
+          git pull --rebase origin "$BRANCH" || true
+
+          mkdir -p .activity
+
+          # Usa horário do Brasil
+          DAY=$(TZ=America/Sao_Paulo date +%u)
+
+          # 1 = segunda / 6 = sábado / 7 = domingo
+
+          if [ "$DAY" -eq 6 ] || [ "$DAY" -eq 7 ]; then
+            # Sábado e domingo: média de 5.000 commits por dia
+            # 8 execuções x 600~700 commits = 4.800 a 5.600 commits/dia
+            COMMITS=$((RANDOM % 101 + 600))
+          else
+            # Segunda a sexta: forte, mas mais normal
+            COMMITS=$((RANDOM % 36 + 25))
+          fi
+
+          MESSAGES=(
+            "chore: update activity"
+            "chore: refresh activity"
+            "chore: sync working log"
+            "docs: update progress"
+            "docs: add working notes"
+            "fix: small adjustment"
+            "refactor: cleanup activity"
+            "build: update metadata"
+            "ci: refresh contribution data"
+            "work: update daily progress"
+          )
+
+          FILE=".activity/activity-$(TZ=America/Sao_Paulo date +%Y-%m-%d).txt"
+
+          echo "Generating $COMMITS commits for day $DAY..."
 
           for ((i=1;i<=COMMITS;i++))
           do
-            echo "$(date) | $RANDOM | commit $i" >> activity.txt
-            git add activity.txt
-            git commit -m "chore: update activity" || true
+            MSG=${MESSAGES[$RANDOM % ${#MESSAGES[@]}]}
+
+            echo "$(TZ=America/Sao_Paulo date '+%Y-%m-%d %H:%M:%S') | $RANDOM | run $GITHUB_RUN_NUMBER | commit $i" >> "$FILE"
+
+            git add "$FILE"
+            git commit -m "$MSG" --quiet || true
           done
 
       - name: Push Changes
-        run: git push
+        run: |
+          git push origin HEAD:"${GITHUB_REF_NAME}"
